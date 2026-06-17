@@ -4,7 +4,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GLib
 import os, subprocess, threading, re
 
-BASE     = os.path.dirname(os.path.abspath(__file__))
+BASE     = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIR1     = os.path.join(BASE, 'part1')
 DIR2     = os.path.join(BASE, 'part2')
 DIR3     = os.path.join(BASE, 'part3')
