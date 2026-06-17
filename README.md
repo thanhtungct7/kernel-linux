@@ -1,7 +1,7 @@
 # Linux Kernel Project
 
 ## Mô tả
-Đây là dự án môn học **Lập trình Nhân Linux** lớp học phần **L03**. 
+Đây là dự án môn học **Lập trình Nhân Linux** lớp học phần **L02**. 
 Dự án tập trung vào việc nghiên cứu và thực hiện các chức năng liên quan đến lập trình nhân Linux với đề tài số **24**.
 
 Dự án bao gồm **4 phần chính**:
