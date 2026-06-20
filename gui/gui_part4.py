@@ -62,8 +62,8 @@ class KbdDriverPanel(Gtk.Box):
         run_bg('make', cwd=DIR4, callback=self._cb)
 
     def _load(self, _):
-        term_write(self.term, '$ sudo insmod kbd_driver.ko\n')
-        run_bg('sudo insmod kbd_driver.ko', cwd=DIR4, callback=self._cb)
+        term_write(self.term, '$ sudo insmod kbd_driver.ko && sudo chmod 666 /dev/kbd_log\n')
+        run_bg('sudo insmod kbd_driver.ko && sudo chmod 666 /dev/kbd_log', cwd=DIR4, callback=self._cb)
 
     def _unload(self, _):
         if not ask(self.win, 'Xác nhận', 'Gỡ bỏ kbd_driver?'): return

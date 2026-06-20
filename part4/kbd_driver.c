@@ -8,6 +8,7 @@
 #include <linux/spinlock.h>
 #include <linux/workqueue.h>
 #include <asm/io.h>
+#include <linux/slab.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Nhom3");
@@ -69,22 +70,32 @@ static irqreturn_t irq_handler(int irq, void *dev_id) {
 
 static ssize_t kbd_read(struct file *file, char __user *user_buf, size_t count, loff_t *ppos) {
     unsigned long flags;
-    char kbuf[BUFFER_SIZE];
+    char *kbuf;
     int copied = 0;
+    size_t len = count > BUFFER_SIZE ? BUFFER_SIZE : count;
+
+    kbuf = kmalloc(len, GFP_KERNEL);
+    if (!kbuf)
+        return -ENOMEM;
 
     spin_lock_irqsave(&buf_lock, flags);
-    while (head != tail && copied < count) {
+    while (head != tail && copied < len) {
         kbuf[copied++] = buffer[tail];
         tail = (tail + 1) % BUFFER_SIZE;
     }
     spin_unlock_irqrestore(&buf_lock, flags);
 
-    if (copied == 0)
+    if (copied == 0) {
+        kfree(kbuf);
         return 0;
+    }
 
-    if (copy_to_user(user_buf, kbuf, copied))
+    if (copy_to_user(user_buf, kbuf, copied)) {
+        kfree(kbuf);
         return -EFAULT;
+    }
 
+    kfree(kbuf);
     return copied;
 }
 
