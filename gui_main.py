@@ -3,6 +3,31 @@
 GUI cho dự án Linux Kernel - Nhóm 3 (Đề tài 24)
 Entry point: import các panel từ gui_part1–4 và dựng MainWindow.
 """
+import os
+import stat
+
+
+def auto_chmod_x(directory):
+    """Tự động tìm và cấp quyền thực thi (chmod +x) cho các file cần thiết"""
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            # Bạn có thể thêm đuôi file khác nếu muốn, ví dụ: file.endswith(('.c', '.sh'))
+            # Hoặc nếu file 'process' sau khi compile không có đuôi, ta check tên của nó:
+            if file.endswith('.c') or file == 'process':
+                file_path = os.path.join(root, file)
+                try:
+                    # Lấy quyền hiện tại của file
+                    st = os.stat(file_path)
+                    # Thêm quyền thực thi cho User, Group và Others (tương đương chmod +x)
+                    os.chmod(file_path, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                except Exception as e:
+                    print(f"Không thể cấp quyền cho {file_path}: {e}")
+
+
+# Lấy thư mục hiện tại của dự án và tiến hành quét
+current_dir = os.path.dirname(os.path.abspath(__file__))
+auto_chmod_x(current_dir)
+
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
