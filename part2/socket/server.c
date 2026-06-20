@@ -18,6 +18,7 @@ struct MessagePacket {
     int type;           // Loại tin nhắn (1: chat, 2: file)
     char sender[100];   // Người gửi
     char content[1024]; // Nội dung tin nhắn hoặc chunk file
+    int bytes_read;
     char filename[256]; // Tên file (nếu gửi file)
     int filesize;       // Kích thước file (nếu gửi file)
     int chunk_id;       // ID của chunk (nếu gửi file)
@@ -48,7 +49,7 @@ void* receiveAndProcessIncomingDataOnSeparateThread(void* lpParam) {
     
     while (1) {
         struct MessagePacket packet;
-        int amountReceived = recv(socketFD, &packet, sizeof(packet), 0);
+        int amountReceived = recv(socketFD, &packet, sizeof(packet), MSG_WAITALL);
         
         if (amountReceived > 0) {
             if (packet.type == MSG_TYPE_CHAT) {

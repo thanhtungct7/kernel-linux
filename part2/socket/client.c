@@ -8,19 +8,21 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <sys/stat.h>
+#include <errno.h>
 
 // Định nghĩa loại tin nhắn
 #define MSG_TYPE_CHAT 1
 #define MSG_TYPE_FILE 2
 #define FILE_CHUNK_SIZE 1024
 
-char ip_server[] = "192.168.117.142"; // Nhập ip server vào đây
+char ip_server[] = "127.0.0.1"; // Nhập ip server vào đây
 
 // Định nghĩa cấu trúc gói tin
 struct MessagePacket {
     int type;           // Loại tin nhắn (1: chat, 2: file)
     char sender[100];   // Người gửi
     char content[1024]; // Nội dung tin nhắn hoặc chunk file
+    int bytes_read;
     char filename[256]; // Tên file (nếu gửi file)
     int filesize;       // Kích thước file (nếu gửi file)
     int chunk_id;       // ID của chunk (nếu gửi file)
@@ -44,13 +46,13 @@ pthread_mutex_t file_mutex = PTHREAD_MUTEX_INITIALIZER;
 // Hàm nhận tin nhắn từ server
 void* recvMsg(void* sock)
 {
-    int their_sock = ((int)sock);
+    int their_sock = *((int*)sock);
     struct MessagePacket packet;
     
     // Tạo thư mục để lưu file nhận được
     mkdir("received_files", 0777);
     
-    while (recv(their_sock, &packet, sizeof(packet), 0) > 0) 
+    while (recv(their_sock, &packet, sizeof(packet), MSG_WAITALL) > 0) 
     {
         if (packet.type == MSG_TYPE_CHAT) {
             // Xử lý tin nhắn chat
@@ -95,6 +97,11 @@ void* recvMsg(void* sock)
                 char filepath[512];
                 sprintf(filepath, "received_files/%s", packet.filename);
                 current_files[file_index].file = fopen(filepath, "wb");
+                if (current_files[file_index].file == NULL) {
+                    printf("\n[LỖI NGHIÊM TRỌNG]: Không thể tạo file '%s'!\n", filepath);
+                    printf("[LÝ DO]: %s\n", strerror(errno));
+                    continue; // Bỏ qua khối dữ liệu này
+                }
                 strcpy(current_files[file_index].filename, packet.filename);
                 strcpy(current_files[file_index].sender, packet.sender);
                 current_files[file_index].received_chunks = 0;
@@ -107,7 +114,7 @@ void* recvMsg(void* sock)
             
             // Ghi chunk vào file
             if (file_index >= 0 && current_files[file_index].file) {
-                fwrite(packet.content, 1, strlen(packet.content), current_files[file_index].file);
+                fwrite(packet.content, 1, packet.bytes_read, current_files[file_index].file);
                 current_files[file_index].received_chunks++;
                 
                 // Nếu đã nhận đủ chunks, đóng file
@@ -128,11 +135,12 @@ void* recvMsg(void* sock)
     return NULL;
 }
 
-// Hàm gửi file
 void sendFile(int sock, char* username, char* filepath) {
+
     FILE* file = fopen(filepath, "rb");
     if (!file) {
-        printf("Không thể mở file '%s'\n", filepath);
+        printf("[LỖI]: Khong the mo file! He thong bao loi: %s\n", strerror(errno));
+        printf("[GỢI Ý]: Co the sai duong dan hoac thieu quyen doc file.\n");
         return;
     }
     
@@ -143,6 +151,7 @@ void sendFile(int sock, char* username, char* filepath) {
     
     // Tính toán số chunk
     int total_chunks = (filesize + FILE_CHUNK_SIZE - 1) / FILE_CHUNK_SIZE;
+    if (total_chunks == 0) total_chunks = 1; // Neu file 0 byte thi van tinh la 1 chunk
     
     // Lấy tên file (không có đường dẫn)
     char* filename = strrchr(filepath, '/');
@@ -152,7 +161,7 @@ void sendFile(int sock, char* username, char* filepath) {
         filename = filepath;
     }
     
-    printf("Đang gửi file '%s' (%ld bytes, %d chunks)\n", filename, filesize, total_chunks);
+    printf("Dang gui file '%s' (%ld bytes, %d chunks)\n", filename, filesize, total_chunks);
     
     // Gửi file theo từng chunk
     char buffer[FILE_CHUNK_SIZE];
@@ -160,17 +169,24 @@ void sendFile(int sock, char* username, char* filepath) {
     int chunk_id = 0;
     
     while (!feof(file)) {
-        // Đọc một chunk từ file
         memset(buffer, 0, FILE_CHUNK_SIZE);
         size_t bytes_read = fread(buffer, 1, FILE_CHUNK_SIZE, file);
         
-        if (bytes_read <= 0) break;
+        if (bytes_read <= 0 && chunk_id > 0) break; // Dung lai neu da het file
         
         // Chuẩn bị gói tin
         packet.type = MSG_TYPE_FILE;
         strcpy(packet.sender, username);
-        strcpy(packet.content, buffer);
+        
+        // Dung memcpy de copy du lieu tho chu khong dung strcpy
+        memset(packet.content, 0, sizeof(packet.content));
+        memcpy(packet.content, buffer, bytes_read);
+        packet.bytes_read = bytes_read; // Truyen thong tin so byte doc duoc
+        
+        // Copy ten file vao goi tin công khai
+        memset(packet.filename, 0, sizeof(packet.filename));
         strcpy(packet.filename, filename);
+        
         packet.filesize = filesize;
         packet.chunk_id = chunk_id++;
         packet.total_chunks = total_chunks;
@@ -178,12 +194,12 @@ void sendFile(int sock, char* username, char* filepath) {
         // Gửi gói tin
         send(sock, &packet, sizeof(packet), 0);
         
-        // Chờ một chút để tránh tắc nghẽn
         usleep(10000);  // 10ms
+        if (bytes_read < FILE_CHUNK_SIZE) break; // Doc xong chunk cuoi thi thoat
     }
     
     fclose(file);
-    printf("Đã gửi file thành công!\n");
+    printf("Da gui file thanh cong!\n");
 }
 
 void showMenu() {
@@ -235,15 +251,24 @@ int main(int argc, char* argv[])
     
     // Tạo thread để nhận tin nhắn
     pthread_create(&recvt, NULL, recvMsg, &my_sock);
-    
-    int choice = 1;  // Mặc định là chế độ chat
+
+    int choice;
     char input[1024];
     struct MessagePacket packet;
     
     while (1) {
         showMenu();
-        fgets(input, sizeof(input), stdin);
-        choice = atoi(input);
+        
+        // 1. Dùng scanf để đọc số lựa chọn của Menu
+        if (scanf("%d", &choice) != 1) {
+            // Nếu người dùng nhập chữ thay vì số, xóa bộ đệm rồi bỏ qua
+            int c; while ((c = getchar()) != '\n' && c != EOF);
+            continue;
+        }
+        
+        // 2. XÓA NGAY KÝ TỰ ENTER THỪA SAU KHI NHẬP SỐ CHỌN MENU
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF); 
         
         if (choice == 0) {
             break;  // Thoát
@@ -251,27 +276,17 @@ int main(int argc, char* argv[])
         else if (choice == 1) {
             // Chế độ chat
             printf("Chế độ chat. Nhập tin nhắn (gõ 'menu' để quay lại menu):\n");
-            
             while (1) {
                 memset(input, 0, sizeof(input));
                 fgets(input, sizeof(input), stdin);
-                
-                // Kiểm tra nếu người dùng muốn quay lại menu
                 if (strcmp(input, "menu\n") == 0) {
                     break;
                 }
                 
-                // Chuẩn bị gói tin chat
                 packet.type = MSG_TYPE_CHAT;
                 strcpy(packet.sender, username);
                 strcpy(packet.content, input);
-                
-                // Gửi tin nhắn
-                int len = send(my_sock, &packet, sizeof(packet), 0);
-                if (len < 0) {
-                    perror("Gửi tin nhắn không thành công...");
-                    exit(1);
-                }
+                send(my_sock, &packet, sizeof(packet), 0);
             }
         }
         else if (choice == 2) {
@@ -282,7 +297,6 @@ int main(int argc, char* argv[])
             fgets(input, sizeof(input), stdin);
             input[strcspn(input, "\n")] = 0;  // Loại bỏ ký tự newline
             
-            // Kiểm tra nếu người dùng muốn quay lại menu
             if (strcmp(input, "menu") == 0) {
                 continue;
             }
