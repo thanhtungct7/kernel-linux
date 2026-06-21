@@ -32,6 +32,7 @@ class KbdDriverPanel(Gtk.Box):
         row1 = Gtk.Box(spacing=8, margin_start=12, margin_end=12, margin_top=10)
         for lbl, cb, danger in [
             ('Build (make)',             self._build,   False),
+            ('Clean',                    self._clean,   False),
             ('Load  (sudo insmod)',      self._load,    False),
             ('Unload  (sudo rmmod)',     self._unload,  True),
         ]:
@@ -60,6 +61,10 @@ class KbdDriverPanel(Gtk.Box):
     def _build(self, _):
         term_write(self.term, '$ make  [part4]\n')
         run_bg('make', cwd=DIR4, callback=self._cb)
+
+    def _clean(self, _):
+        term_write(self.term, '$ make clean  [part4]\n')
+        run_bg('make clean', cwd=DIR4, callback=self._cb)
 
     def _load(self, _):
         term_write(self.term, '$ sudo insmod kbd_driver.ko && sudo chmod 666 /dev/kbd_log\n')
