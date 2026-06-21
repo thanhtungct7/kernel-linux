@@ -24,7 +24,7 @@ def auto_chmod_x(directory):
         for file in files:
             # Bạn có thể thêm đuôi file khác nếu muốn, ví dụ: file.endswith(('.c', '.sh'))
             # Hoặc nếu file 'process' sau khi compile không có đuôi, ta check tên của nó:
-            if file.endswith('.c') or file == 'process':
+            if file.endswith('.sh') or file == 'process':
                 file_path = os.path.join(root, file)
                 try:
                     # Lấy quyền hiện tại của file
