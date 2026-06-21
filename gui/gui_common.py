@@ -182,6 +182,7 @@ def title_lbl(text):
 
 def act_btn(label, danger=False):
     b = Gtk.Button(label=label)
+    b.set_can_focus(False)
     b.get_style_context().add_class('act')
     if danger:
         b.get_style_context().add_class('danger')

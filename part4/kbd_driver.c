@@ -30,12 +30,14 @@ static struct cdev kbd_cdev;
 static struct workqueue_struct *kbd_wq;
 static DECLARE_WORK(kbd_work, NULL);
 static unsigned char last_scancode = 0;
+static int shift_pressed = 0;
 
-/* Chuyển scancode sang ASCII đơn giản */
 static char scancode_to_ascii(unsigned char scancode) {
-    static const char *keymap = "??1234567890-=??qwertyuiop[]??asdfghjkl;'`??zxcvbnm,./?";
-    if (scancode < 0x3A)
-        return keymap[scancode];
+    static const char *keymap = "??1234567890-=\b\tqwertyuiop[]\n?asdfghjkl;'`??zxcvbnm,./??? ";
+    static const char *keymap_shift = "??!@#$%^&*()_+\b\tQWERTYUIOP{}\n?ASDFGHJKL:\"~?|ZXCVBNM<>????? ";
+    if (scancode < 0x3A) {
+        return shift_pressed ? keymap_shift[scancode] : keymap[scancode];
+    }
     return '?';
 }
 
@@ -60,7 +62,11 @@ static void kbd_work_handler(struct work_struct *work) {
 static irqreturn_t irq_handler(int irq, void *dev_id) {
     unsigned char scancode = inb(0x60);
 
-    if (!(scancode & 0x80)) {
+    if (scancode == 0x2A || scancode == 0x36) {
+        shift_pressed = 1;
+    } else if (scancode == 0xAA || scancode == 0xB6) {
+        shift_pressed = 0;
+    } else if (!(scancode & 0x80)) {
         last_scancode = scancode;
         queue_work(kbd_wq, &kbd_work);
     }
