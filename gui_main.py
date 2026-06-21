@@ -102,7 +102,10 @@ class MainWindow(Gtk.Window):
                 sidebar.pack_start(sl, False, False, 0)
 
             panel = PanelCls(self)
-            self.stack.add_named(panel, nav_id)
+            sw = Gtk.ScrolledWindow()
+            sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+            sw.add(panel)
+            self.stack.add_named(sw, nav_id)
 
             btn = Gtk.Button(label=f'  {label}')
             btn.get_style_context().add_class('nav-btn')

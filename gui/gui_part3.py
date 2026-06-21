@@ -69,15 +69,7 @@ class KernelModulePanel(Gtk.Box):
         box2.pack_start(op_row, False, False, 0)
 
         self._input_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        sw_in = Gtk.ScrolledWindow()
-        sw_in.set_hexpand(True)
-        sw_in.set_vexpand(True)
-        sw_in.set_min_content_height(100)
-        sw_in.set_max_content_height(250)
-        sw_in.set_propagate_natural_height(True)
-        sw_in.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
-        sw_in.add(self._input_box)
-        box2.pack_start(sw_in, True, True, 0)
+        box2.pack_start(self._input_box, False, False, 0)
 
         b_run = act_btn('Chay  (sudo insmod)')
         b_run.connect('clicked', self._run)
@@ -96,9 +88,10 @@ class KernelModulePanel(Gtk.Box):
         b_dmesg.connect('clicked', self._dmesg)
         box3.pack_start(b_dmesg, False, False, 0)
         self.term, sw_term = make_term()
+        sw_term.set_min_content_height(250)
         box3.pack_start(sw_term, True, True, 0)
         fr3.add(box3)
-        self.pack_start(fr3, True, True, 0)
+        self.pack_start(fr3, False, False, 0)
 
         self._rebuild_all()
 
@@ -207,8 +200,14 @@ class KernelModulePanel(Gtk.Box):
 
         self._cells[mat_key] = cells
         container.pack_start(vbox, False, False, 0)
-        container.show_all()
-        container.queue_resize()
+        self.show_all()
+        self.queue_resize()
+        p = self.get_parent()
+        if p:
+            p.queue_resize()
+            gp = p.get_parent()
+            if gp:
+                gp.queue_resize()
 
     def _cell_key(self, entry, event, row_i, col_i, mat_key):
         cells = self._cells.get(mat_key, [])
@@ -341,7 +340,14 @@ class KernelModulePanel(Gtk.Box):
             self._connect_dim(['p', 'q'])
             self._matrix_section('a', 'Ma trận A', 'p', 'q')
 
-        self._input_box.show_all()
+        self.show_all()
+        self.queue_resize()
+        p = self.get_parent()
+        if p:
+            p.queue_resize()
+            gp = p.get_parent()
+            if gp:
+                gp.queue_resize()
 
     # ── actions ────────────────────────────────────────────────────────────
 
