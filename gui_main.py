@@ -6,6 +6,17 @@ Entry point: import các panel từ gui_part1–4 và dựng MainWindow.
 import os
 import stat
 
+# Tự động cấu hình DISPLAY và XAUTHORITY cho các phiên SSH/Antigravity
+if not os.environ.get('DISPLAY'):
+    os.environ['DISPLAY'] = ':0'
+
+if not os.environ.get('XAUTHORITY'):
+    uid = os.getuid()
+    for path in [f'/run/user/{uid}/gdm/Xauthority', os.path.expanduser('~/.Xauthority')]:
+        if os.path.exists(path):
+            os.environ['XAUTHORITY'] = path
+            break
+
 
 def auto_chmod_x(directory):
     """Tự động tìm và cấp quyền thực thi (chmod +x) cho các file cần thiết"""

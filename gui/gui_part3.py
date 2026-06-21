@@ -72,8 +72,9 @@ class KernelModulePanel(Gtk.Box):
         sw_in = Gtk.ScrolledWindow()
         sw_in.set_hexpand(True)
         sw_in.set_vexpand(True)
-        sw_in.set_min_content_height(360)
-        sw_in.set_max_content_height(600)
+        sw_in.set_min_content_height(100)
+        sw_in.set_max_content_height(250)
+        sw_in.set_propagate_natural_height(True)
         sw_in.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         sw_in.add(self._input_box)
         box2.pack_start(sw_in, True, True, 0)
@@ -83,7 +84,7 @@ class KernelModulePanel(Gtk.Box):
         box2.pack_start(b_run, False, False, 0)
 
         fr2.add(box2)
-        self.pack_start(fr2, True, True, 0)
+        self.pack_start(fr2, False, False, 0)
 
         # ── Frame 3: Kết quả ──────────────────────────────────────────────
         fr3 = Gtk.Frame(label='  Ket qua  ')
@@ -376,11 +377,11 @@ class KernelModulePanel(Gtk.Box):
                     flat.append(val)
             args.append(f'{mat_key}={",".join(flat)}')
 
-        cmd = f'sudo rmmod test 2>/dev/null; sudo insmod test.ko {" ".join(args)}'
+        cmd = f'sudo rmmod test 2>/dev/null; sudo dmesg -C; sudo insmod test.ko {" ".join(args)}'
         term_write(self.term, f'$ {cmd}\n')
         run_bg(cmd, cwd=DIR3, callback=self._cb)
 
     def _dmesg(self, _):
-        o, e, _ = run_cmd('sudo dmesg | tail -40')
+        o, e, _ = run_cmd('sudo dmesg | grep -iv dnd | tail -40')
         term_clear(self.term)
         term_write(self.term, o or e)
