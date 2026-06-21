@@ -45,7 +45,7 @@ from gi.repository import Gtk, Gdk
 
 from gui.gui_common import CSS
 from gui.gui_part1 import FileShellPanel, TaskPanel, TimePanel, InstallPanel
-from gui.gui_part2 import ProcessPanel, FileCPanel, NetworkPanel
+from gui.gui_part2 import ProcessPanel, FileCPanel, NetworkPanel, SocketPanel
 from gui.gui_part3 import KernelModulePanel
 from gui.gui_part4 import KbdDriverPanel
 
@@ -60,6 +60,7 @@ class MainWindow(Gtk.Window):
         ('proc',    'Quản lý Tiến trình',  ProcessPanel,      'Part 2 – C'),
         ('file_c',  'Quản lý File (C)',    FileCPanel,        None),
         ('network', 'Quản lý Mạng',       NetworkPanel,      None),
+        ('socket',  'Truyền thông Socket', SocketPanel,       None),
         ('kernel',  'Module Toán học',    KernelModulePanel, 'Part 3 – Module'),
         ('kbd',     'Keyboard Driver',    KbdDriverPanel,    'Part 4 – Interrupts'),
     ]

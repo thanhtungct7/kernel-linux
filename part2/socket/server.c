@@ -99,7 +99,12 @@ struct AcceptedSocket* acceptIncomingConnection(int serverSocketFD) {
     return acceptedSocket;
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    int port = 2000;
+    if (argc >= 2) {
+        port = atoi(argv[1]);
+    }
+    
     int serverSocketFD = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSocketFD < 0) {
         perror("Socket creation failed");
@@ -108,7 +113,7 @@ int main() {
     
     struct sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(2000);
+    serverAddress.sin_port = htons(port);
     serverAddress.sin_addr.s_addr = INADDR_ANY;
     
     if (bind(serverSocketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {

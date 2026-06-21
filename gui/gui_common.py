@@ -21,6 +21,12 @@ NET_SRC  = os.path.join(DIR2, 'network.c')
 FMGMT_BIN= os.path.join(DIR2, 'filemanagement')
 FMGMT_SRC= os.path.join(DIR2, 'filemanagement.c')
 
+SOCKET_DIR = os.path.join(DIR2, 'socket')
+SOCKET_SRV_SRC = os.path.join(SOCKET_DIR, 'server.c')
+SOCKET_SRV_BIN = os.path.join(SOCKET_DIR, 'server')
+SOCKET_CLI_SRC = os.path.join(SOCKET_DIR, 'client.c')
+SOCKET_CLI_BIN = os.path.join(SOCKET_DIR, 'client')
+
 CSS = b"""
 .title-bar {
     background-color: #085696;
@@ -134,17 +140,16 @@ def pipe_bin_bg(binary, choices, cwd=None, sudo=False, callback=None):
     prefix = 'sudo ' if sudo else ''
     run_bg(f'{prefix}"{binary}"', cwd=cwd, inp=inp, callback=callback)
 
-def ensure_compiled(src, out):
+def ensure_compiled(src, out, extra_flags=""):
     if os.path.exists(out):
         return True, ''
-    o, e, rc = run_cmd(f'gcc -o "{out}" "{src}"')
+    o, e, rc = run_cmd(f'gcc -o "{out}" "{src}" {extra_flags}')
     if rc != 0:
         return False, f'Biên dịch thất bại:\n{e}'
     return True, f'Đã biên dịch: {os.path.basename(out)}\n'
 
 def open_terminal(cmd):
-    wrap = cmd + '; read -p "Nhấn Enter để đóng'
-    '"'
+    wrap = cmd + '; read -p "Nhấn Enter để đóng"'
     for term, args in [
         ('ptyxis',         lambda: ['ptyxis', '--', 'bash', '-c', wrap]),
         ('gnome-terminal', lambda: ['gnome-terminal', '--', 'bash', '-c', wrap]),

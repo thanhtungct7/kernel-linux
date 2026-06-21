@@ -15,7 +15,7 @@
 #define MSG_TYPE_FILE 2
 #define FILE_CHUNK_SIZE 1024
 
-char ip_server[] = "127.0.0.1"; // Nhập ip server vào đây
+char ip_server[256] = "127.0.0.1"; // Nhập ip server vào đây
 
 // Định nghĩa cấu trúc gói tin
 struct MessagePacket {
@@ -219,14 +219,18 @@ int main(int argc, char* argv[])
     char username[100];
     char ip[INET_ADDRSTRLEN];
     
-    if (argc > 3) 
+    if (argc < 3) 
     {
-        printf("Quá nhiều tham số...\n");
+        printf("Sử dụng: %s <username> <port> [ip_server]\n", argv[0]);
         exit(1);
     }
     
     portno = atoi(argv[2]);
     strcpy(username, argv[1]);
+    
+    if (argc >= 4) {
+        strncpy(ip_server, argv[3], sizeof(ip_server) - 1);
+    }
     
     my_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (my_sock < 0)
